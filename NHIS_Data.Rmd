@@ -6,12 +6,64 @@ output: github_document
 ---
 
 # Loading in NHIS Data
-```{r Loading NHIS database}
-library(readr)
-NHIS_Data <- read.csv("student_datav2.csv", header = TRUE)
-View(NHIS_Data)
-detach()
+```{r Loading in NHIS data}
+library(readxl)
+NHIS_data <- read_excel("NHIS_abridged_v2_labels_Feb07.xlsx", 
+    sheet = "Sheet1")
+View(NHIS_data)
 
-str(NHIS_Data)
+head(NHIS_data)
+tail(NHIS_data)
+View(NHIS_data)
+
+sapply(NHIS_data, class)
 ```
+# Converting the number columns to numeric
+```{r Converting the number columns to numeric}
+# Specify columns you want to change
+i <- c(2,4,33,36,37,38,39,41,42,43,49,50,53,54,55,58,61)  
+
+# Specify own function within apply
+NHIS_data[ , i] <- apply(NHIS_data[ , i], 2,
+                         function(x) as.numeric(as.character(x)))
+
+# Get classes of all columns
+sapply(NHIS_data, class) 
+```
+
+
+
+# Installing packages
+```{r Installing the tidyverse package}
+library("tidyverse")
+```
+
+# Analysis
+```{r Analysis}
+male_36 <- NHIS_data %>% 
+  select(hhx, agep_a, sex_a) %>% 
+  filter(agep_a < 36 & sex_a == "Male") %>% 
+  arrange(agep_a)
+
+plot(male_36)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
