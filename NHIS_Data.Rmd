@@ -1,0 +1,17 @@
+---
+title: "NHIS Data"
+font-family: 'Corbel'
+author: Nicole Dodson & Kieran Yuen
+output: github_document
+---
+
+# Loading in NHIS Data
+```{r Loading NHIS database}
+library(readr)
+NHIS_Data <- read.csv("student_datav2.csv", header = TRUE)
+View(NHIS_Data)
+detach()
+
+str(NHIS_Data)
+```
+
