@@ -2,451 +2,314 @@ NHIS Data
 ================
 Nicole Dodson & Kieran Yuen
 
+``` r
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+``` r
+library(readxl)
+student_datav1 <- read_excel("student_datav1.xlsx")
+```
+
+``` r
+library(tidyverse)
+```
+
+    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
+
+    ## ✓ ggplot2 3.3.3     ✓ purrr   0.3.4
+    ## ✓ tibble  3.1.6     ✓ dplyr   1.0.6
+    ## ✓ tidyr   1.1.4     ✓ stringr 1.4.0
+    ## ✓ readr   2.1.1     ✓ forcats 0.5.1
+
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## x dplyr::filter() masks stats::filter()
+    ## x dplyr::lag()    masks stats::lag()
+
+``` r
+NHIS_data <- student_datav1 %>% 
+  select(educ_a,
+         hisp_a,
+         raceallp_a,
+         agep_a,
+         sex_a,
+         marstat_a,
+         phstat_a,
+         covidtest_a) %>%
+  rename(Education = educ_a,
+         Hisp = hisp_a,
+         Race = raceallp_a,
+         Age = agep_a,
+         Sex = sex_a,
+         Marital_Status = marstat_a,
+         Health_Status = phstat_a,
+         Covid_Test= covidtest_a) %>%
+  
+  na.omit() %>% 
+  
+  filter(Covid_Test =="1"| #YestoCovidTest
+           Covid_Test == "2") %>% #NotoCovidTest 
+  
+  mutate(Covid_Test = recode(Covid_Test,
+                            '1' = 1,#YestoCovidTest
+                            '2' = 0)) %>% #NotoCovidTest 
+                              
+  mutate(Education = recode(Education,
+                            '0' = 1,#nohighschool
+                            '1' = 1,#nohighschool
+                            '2' = 1,#nohighschool
+                            '3' = 2,#highschool
+                            '4' = 2,#highschool
+                            '5' = 3,#somecollege
+                            '6' = 4,#associates
+                            '7' = 4,#associates
+                            '8' = 5,#bachelors
+                            '9' = 6,#masters
+                            '10' = 7,#phdprofessional
+                            '11' = 7,#phdprofessional
+                            '97' = NA_real_,
+                            '99' = NA_real_)) %>%
+  
+  mutate(Hisp = recode(Hisp,
+                            '1' = "Hispanic",
+                            '2' = "Non_hispanic")) %>% 
+  
+  mutate(Race = recode(Race,
+                            '1' = "White only",
+                            '2' = "Black/African American only",
+                            '3' = "Asian only",
+                            '4' = "AIAN only",
+                            '5' = "AIAN and any other group",
+                            '6' = "Other single and multiple races",
+                            '7' = "Refused",
+                            '8' = "Not Ascertained",
+                            '9' = "Don't know")) %>%
+  
+  mutate(Race_Hisp = ifelse(Hisp == 'Non_hispanic' & Race == 'Black/African American only', 
+                            'Non-Hispanic Black',
+                            ifelse(Hisp == 'Non_hispanic' & Race == 'White only', 
+                                   'Non-Hispanic White',
+                                   ifelse(Hisp == 'Non_hispanic' & Race == 'AIAN and any other group'|
+                                            Hisp == 'Non_hispanic' & Race == 'AIAN only'|
+                                            Hisp == 'Non_hispanic' & Race == 'Asian only'|
+                                            Hisp == 'Non_hispanic' & Race == 'Other single and multiple races', 
+                                          'Other',
+                                          'Hispanic')))) %>%
+                            
+  mutate(Sex = recode(Sex,
+                            '1' = "Male",
+                            '2' = "Female",
+                            '7' = NA_character_,
+                            '9' = NA_character_)) %>%
+  
+  mutate(Marital_Status = recode(Marital_Status,
+                            '1' = "Live with someone",
+                            '2' = "Live alone",
+                            '3' = "Live alone",
+                            '4' = "Live alone",
+                            '5' = "Live alone",
+                            '6' = "Live alone",
+                            '7' = "Live alone",
+                            '8' = "Live with someone",
+                            '9' = "Live alone")) %>%
+  
+  mutate(Health_Status = recode(Health_Status,
+                            '1' = 5,
+                            '2' = 4,
+                            '3' = 3,
+                            '4' = 2,
+                            '5' = 1,
+                            '7' = NA_real_,
+                            '9' = NA_real_,
+                            ))
+```
+
 # Regression Models
 
 ## Model \#1: Demographic information only
 
 ``` r
-Model_1 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status,
-                        data = NHIS_data,
-                        family = binomial)
+Model_1 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_1)
 ```
 
     ## 
     ## Call:
-    ## glm(formula = Covid_Test ~ Race + Age + Sex + Marital_Status, 
-    ##     family = binomial, data = NHIS_data)
+    ## glm(formula = Covid_Test ~ Education + Age + Sex + Marital_Status + 
+    ##     Race_Hisp, family = binomial, data = NHIS_data)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.1266  -0.8882  -0.8165   1.4414   1.7516  
+    ## -1.1874  -0.8897  -0.8094   1.4178   1.7973  
     ## 
     ## Coefficients:
-    ##                                               Estimate Std. Error z value
-    ## (Intercept)                                  -0.111565   0.226610  -0.492
-    ## RaceAIAN only                                -0.038824   0.290241  -0.134
-    ## RaceAsian only                               -0.525277   0.216744  -2.423
-    ## RaceBlack/African American only               0.005823   0.206089   0.028
-    ## RaceOther single and multiple races          -0.106625   0.264767  -0.403
-    ## RaceRace Unknown                             -0.211253   0.217400  -0.972
-    ## RaceWhite only                               -0.293797   0.198575  -1.480
-    ## Age                                          -0.004720   0.001997  -2.363
-    ## SexMale                                      -0.232432   0.042574  -5.459
-    ## Marital_StatusLiving with a partner           0.052327   0.097812   0.535
-    ## Marital_StatusMarital status unknown         -0.152704   0.130546  -1.170
-    ## Marital_StatusMarried, spouse is not present  0.019354   0.150142   0.129
-    ## Marital_StatusMarried, spouse is present     -0.119746   0.064546  -1.855
-    ## Marital_StatusNever married                  -0.046763   0.076784  -0.609
-    ## Marital_StatusSeparated                       0.121933   0.160197   0.761
-    ## Marital_StatusWidowed                        -0.134487   0.150063  -0.896
-    ##                                              Pr(>|z|)    
-    ## (Intercept)                                    0.6225    
-    ## RaceAIAN only                                  0.8936    
-    ## RaceAsian only                                 0.0154 *  
-    ## RaceBlack/African American only                0.9775    
-    ## RaceOther single and multiple races            0.6872    
-    ## RaceRace Unknown                               0.3312    
-    ## RaceWhite only                                 0.1390    
-    ## Age                                            0.0181 *  
-    ## SexMale                                      4.78e-08 ***
-    ## Marital_StatusLiving with a partner            0.5927    
-    ## Marital_StatusMarital status unknown           0.2421    
-    ## Marital_StatusMarried, spouse is not present   0.8974    
-    ## Marital_StatusMarried, spouse is present       0.0636 .  
-    ## Marital_StatusNever married                    0.5425    
-    ## Marital_StatusSeparated                        0.4466    
-    ## Marital_StatusWidowed                          0.3701    
+    ##                                  Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)                     -0.951126   0.120137  -7.917 2.43e-15 ***
+    ## Education                        0.094566   0.013264   7.130 1.01e-12 ***
+    ## Age                             -0.002536   0.001926  -1.317   0.1880    
+    ## SexMale                         -0.222930   0.042606  -5.232 1.67e-07 ***
+    ## Marital_StatusLive with someone -0.086324   0.043694  -1.976   0.0482 *  
+    ## Race_HispNon-Hispanic Black      0.388773   0.069122   5.624 1.86e-08 ***
+    ## Race_HispHispanic                0.299673   0.063667   4.707 2.52e-06 ***
+    ## Race_HispOther                  -0.080602   0.077835  -1.036   0.3004    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 13086  on 10482  degrees of freedom
-    ## Residual deviance: 12998  on 10467  degrees of freedom
-    ##   (9 observations deleted due to missingness)
-    ## AIC: 13030
+    ##     Null deviance: 13038  on 10445  degrees of freedom
+    ## Residual deviance: 12908  on 10438  degrees of freedom
+    ##   (46 observations deleted due to missingness)
+    ## AIC: 12924
     ## 
     ## Number of Fisher Scoring iterations: 4
 
 ``` r
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_1))
+exp(coef(Model_1))
 ```
 
-    ##                                  (Intercept) 
-    ##                                    0.8944330 
-    ##                                RaceAIAN only 
-    ##                                    0.9619203 
-    ##                               RaceAsian only 
-    ##                                    0.5913916 
-    ##              RaceBlack/African American only 
-    ##                                    1.0058401 
-    ##          RaceOther single and multiple races 
-    ##                                    0.8988623 
-    ##                             RaceRace Unknown 
-    ##                                    0.8095695 
-    ##                               RaceWhite only 
-    ##                                    0.7454278 
-    ##                                          Age 
-    ##                                    0.9952909 
-    ##                                      SexMale 
-    ##                                    0.7926038 
-    ##          Marital_StatusLiving with a partner 
-    ##                                    1.0537205 
-    ##         Marital_StatusMarital status unknown 
-    ##                                    0.8583842 
-    ## Marital_StatusMarried, spouse is not present 
-    ##                                    1.0195422 
-    ##     Marital_StatusMarried, spouse is present 
-    ##                                    0.8871458 
-    ##                  Marital_StatusNever married 
-    ##                                    0.9543136 
-    ##                      Marital_StatusSeparated 
-    ##                                    1.1296780 
-    ##                        Marital_StatusWidowed 
-    ##                                    0.8741640
+    ##                     (Intercept)                       Education 
+    ##                       0.3863056                       1.0991820 
+    ##                             Age                         SexMale 
+    ##                       0.9974677                       0.8001712 
+    ## Marital_StatusLive with someone     Race_HispNon-Hispanic Black 
+    ##                       0.9172967                       1.4751692 
+    ##               Race_HispHispanic                  Race_HispOther 
+    ##                       1.3494181                       0.9225612
+
+## Model \#2: Demo + Health Status
 
 ``` r
-plot(Model_1)
-```
-
-![](NHIS_Data_files/figure-gfm/Model%20#1:%20Demographic%20information%20only-1.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#1:%20Demographic%20information%20only-2.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#1:%20Demographic%20information%20only-3.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#1:%20Demographic%20information%20only-4.png)<!-- -->
-
-## Model \#2: Demo + Health Status Grouping
-
-``` r
-Model_2 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status
-                        + Health_Status_Group,
-                        data = NHIS_data,
-                        family = binomial)
+Model_2 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + Health_Status,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_2)
 ```
 
     ## 
     ## Call:
-    ## glm(formula = Covid_Test ~ Race + Age + Sex + Marital_Status + 
-    ##     Health_Status_Group, family = binomial, data = NHIS_data)
+    ## glm(formula = Covid_Test ~ Education + Age + Sex + Marital_Status + 
+    ##     Race_Hisp + Health_Status, family = binomial, data = NHIS_data)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.1656  -0.8879  -0.8166   1.4372   1.7592  
+    ## -1.2598  -0.8889  -0.8025   1.4070   1.8452  
     ## 
     ## Coefficients:
-    ##                                               Estimate Std. Error z value
-    ## (Intercept)                                   0.029015   0.233942   0.124
-    ## RaceAIAN only                                -0.030084   0.290343  -0.104
-    ## RaceAsian only                               -0.492065   0.217183  -2.266
-    ## RaceBlack/African American only               0.025628   0.206273   0.124
-    ## RaceOther single and multiple races          -0.080919   0.265008  -0.305
-    ## RaceRace Unknown                             -0.191209   0.217562  -0.879
-    ## RaceWhite only                               -0.266937   0.198886  -1.342
-    ## Age                                          -0.005379   0.002019  -2.664
-    ## SexMale                                      -0.229761   0.042598  -5.394
-    ## Marital_StatusLiving with a partner           0.053656   0.097844   0.548
-    ## Marital_StatusMarital status unknown         -0.154063   0.130601  -1.180
-    ## Marital_StatusMarried, spouse is not present  0.020870   0.150177   0.139
-    ## Marital_StatusMarried, spouse is present     -0.109562   0.064691  -1.694
-    ## Marital_StatusNever married                  -0.045631   0.076822  -0.594
-    ## Marital_StatusSeparated                       0.111214   0.160676   0.692
-    ## Marital_StatusWidowed                        -0.162212   0.150866  -1.075
-    ## Health_Status_GroupHigh_Health               -0.161395   0.064475  -2.503
-    ##                                              Pr(>|z|)    
-    ## (Intercept)                                   0.90129    
-    ## RaceAIAN only                                 0.91748    
-    ## RaceAsian only                                0.02347 *  
-    ## RaceBlack/African American only               0.90112    
-    ## RaceOther single and multiple races           0.76010    
-    ## RaceRace Unknown                              0.37947    
-    ## RaceWhite only                                0.17954    
-    ## Age                                           0.00773 ** 
-    ## SexMale                                       6.9e-08 ***
-    ## Marital_StatusLiving with a partner           0.58343    
-    ## Marital_StatusMarital status unknown          0.23814    
-    ## Marital_StatusMarried, spouse is not present  0.88947    
-    ## Marital_StatusMarried, spouse is present      0.09034 .  
-    ## Marital_StatusNever married                   0.55253    
-    ## Marital_StatusSeparated                       0.48883    
-    ## Marital_StatusWidowed                         0.28228    
-    ## Health_Status_GroupHigh_Health                0.01231 *  
+    ##                                  Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)                     -0.548212   0.145203  -3.775  0.00016 ***
+    ## Education                        0.111471   0.013724   8.122 4.58e-16 ***
+    ## Age                             -0.004248   0.001961  -2.166  0.03034 *  
+    ## SexMale                         -0.215697   0.042679  -5.054 4.33e-07 ***
+    ## Marital_StatusLive with someone -0.068634   0.043913  -1.563  0.11806    
+    ## Race_HispNon-Hispanic Black      0.374789   0.069263   5.411 6.26e-08 ***
+    ## Race_HispHispanic                0.297328   0.063769   4.663 3.12e-06 ***
+    ## Race_HispOther                  -0.087799   0.077916  -1.127  0.25981    
+    ## Health_Status                   -0.108427   0.021856  -4.961 7.01e-07 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 13080  on 10477  degrees of freedom
-    ## Residual deviance: 12987  on 10461  degrees of freedom
-    ##   (14 observations deleted due to missingness)
-    ## AIC: 13021
+    ##     Null deviance: 13032  on 10440  degrees of freedom
+    ## Residual deviance: 12879  on 10432  degrees of freedom
+    ##   (51 observations deleted due to missingness)
+    ## AIC: 12897
     ## 
     ## Number of Fisher Scoring iterations: 4
 
 ``` r
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_2))
+exp(coef(Model_2))
 ```
 
-    ##                                  (Intercept) 
-    ##                                    1.0294402 
-    ##                                RaceAIAN only 
-    ##                                    0.9703645 
-    ##                               RaceAsian only 
-    ##                                    0.6113626 
-    ##              RaceBlack/African American only 
-    ##                                    1.0259597 
-    ##          RaceOther single and multiple races 
-    ##                                    0.9222684 
-    ##                             RaceRace Unknown 
-    ##                                    0.8259596 
-    ##                               RaceWhite only 
-    ##                                    0.7657216 
-    ##                                          Age 
-    ##                                    0.9946355 
-    ##                                      SexMale 
-    ##                                    0.7947239 
-    ##          Marital_StatusLiving with a partner 
-    ##                                    1.0551214 
-    ##         Marital_StatusMarital status unknown 
-    ##                                    0.8572176 
-    ## Marital_StatusMarried, spouse is not present 
-    ##                                    1.0210892 
-    ##     Marital_StatusMarried, spouse is present 
-    ##                                    0.8962269 
-    ##                  Marital_StatusNever married 
-    ##                                    0.9553945 
-    ##                      Marital_StatusSeparated 
-    ##                                    1.1176344 
-    ##                        Marital_StatusWidowed 
-    ##                                    0.8502605 
-    ##               Health_Status_GroupHigh_Health 
-    ##                                    0.8509562
+    ##                     (Intercept)                       Education 
+    ##                       0.5779826                       1.1179214 
+    ##                             Age                         SexMale 
+    ##                       0.9957614                       0.8059797 
+    ## Marital_StatusLive with someone     Race_HispNon-Hispanic Black 
+    ##                       0.9336680                       1.4546848 
+    ##               Race_HispHispanic                  Race_HispOther 
+    ##                       1.3462572                       0.9159450 
+    ##                   Health_Status 
+    ##                       0.8972446
+
+## Model \#3: Demo + Health Status + Interaction
 
 ``` r
-plot(Model_2)
-```
-
-![](NHIS_Data_files/figure-gfm/Model%20#2:%20Demo%20+%20Health%20Status%20Grouping-1.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#2:%20Demo%20+%20Health%20Status%20Grouping-2.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#2:%20Demo%20+%20Health%20Status%20Grouping-3.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#2:%20Demo%20+%20Health%20Status%20Grouping-4.png)<!-- -->
-
-## Model \#3: Demo + Health Status Grouping + Interaction
-
-``` r
-Model_3 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status
-                        + Health_Status_Group
-                        + Education_Level*Health_Status_Group,
-                        data = NHIS_data,
-                        family = binomial)
+Model_3 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + Health_Status
+               + Education*Health_Status,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_3)
 ```
 
     ## 
     ## Call:
-    ## glm(formula = Covid_Test ~ Race + Age + Sex + Marital_Status + 
-    ##     Health_Status_Group + Education_Level * Health_Status_Group, 
-    ##     family = binomial, data = NHIS_data)
+    ## glm(formula = Covid_Test ~ Education + Age + Sex + Marital_Status + 
+    ##     Race_Hisp + Health_Status + Education * Health_Status, family = binomial, 
+    ##     data = NHIS_data)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.3066  -0.8909  -0.7965   1.4094   1.9215  
+    ## -1.2027  -0.8912  -0.8034   1.4076   1.8879  
     ## 
     ## Coefficients:
-    ##                                                                    Estimate
-    ## (Intercept)                                                       -0.308413
-    ## RaceAIAN only                                                      0.022144
-    ## RaceAsian only                                                    -0.717749
-    ## RaceBlack/African American only                                   -0.043217
-    ## RaceOther single and multiple races                               -0.148389
-    ## RaceRace Unknown                                                  -0.118048
-    ## RaceWhite only                                                    -0.362675
-    ## Age                                                               -0.004180
-    ## SexMale                                                           -0.205174
-    ## Marital_StatusLiving with a partner                                0.086444
-    ## Marital_StatusMarital status unknown                              -0.181696
-    ## Marital_StatusMarried, spouse is not present                      -0.038216
-    ## Marital_StatusMarried, spouse is present                          -0.134960
-    ## Marital_StatusNever married                                       -0.046751
-    ## Marital_StatusSeparated                                            0.194740
-    ## Marital_StatusWidowed                                             -0.063380
-    ## Health_Status_GroupHigh_Health                                    -0.085755
-    ## Education_LevelHigh School                                         0.350188
-    ## Education_LevelAssociate's                                         0.325249
-    ## Education_LevelBachelor's                                          0.349718
-    ## Education_LevelMaster's                                            0.659672
-    ## Education_LevelPhD or Professional                                -0.199672
-    ## Health_Status_GroupHigh_Health:Education_LevelHigh School         -0.314093
-    ## Health_Status_GroupHigh_Health:Education_LevelAssociate's         -0.066563
-    ## Health_Status_GroupHigh_Health:Education_LevelBachelor's           0.018677
-    ## Health_Status_GroupHigh_Health:Education_LevelMaster's            -0.174931
-    ## Health_Status_GroupHigh_Health:Education_LevelPhD or Professional  0.962513
-    ##                                                                   Std. Error
-    ## (Intercept)                                                         0.300430
-    ## RaceAIAN only                                                       0.336059
-    ## RaceAsian only                                                      0.243439
-    ## RaceBlack/African American only                                     0.233566
-    ## RaceOther single and multiple races                                 0.293011
-    ## RaceRace Unknown                                                    0.246054
-    ## RaceWhite only                                                      0.225001
-    ## Age                                                                 0.002211
-    ## SexMale                                                             0.046335
-    ## Marital_StatusLiving with a partner                                 0.107515
-    ## Marital_StatusMarital status unknown                                0.143467
-    ## Marital_StatusMarried, spouse is not present                        0.166734
-    ## Marital_StatusMarried, spouse is present                            0.070932
-    ## Marital_StatusNever married                                         0.084243
-    ## Marital_StatusSeparated                                             0.179488
-    ## Marital_StatusWidowed                                               0.166877
-    ## Health_Status_GroupHigh_Health                                      0.186239
-    ## Education_LevelHigh School                                          0.187134
-    ## Education_LevelAssociate's                                          0.225623
-    ## Education_LevelBachelor's                                           0.222357
-    ## Education_LevelMaster's                                             0.285385
-    ## Education_LevelPhD or Professional                                  0.819681
-    ## Health_Status_GroupHigh_Health:Education_LevelHigh School           0.219887
-    ## Health_Status_GroupHigh_Health:Education_LevelAssociate's           0.255007
-    ## Health_Status_GroupHigh_Health:Education_LevelBachelor's            0.247710
-    ## Health_Status_GroupHigh_Health:Education_LevelMaster's              0.307782
-    ## Health_Status_GroupHigh_Health:Education_LevelPhD or Professional   0.831504
-    ##                                                                   z value
-    ## (Intercept)                                                        -1.027
-    ## RaceAIAN only                                                       0.066
-    ## RaceAsian only                                                     -2.948
-    ## RaceBlack/African American only                                    -0.185
-    ## RaceOther single and multiple races                                -0.506
-    ## RaceRace Unknown                                                   -0.480
-    ## RaceWhite only                                                     -1.612
-    ## Age                                                                -1.891
-    ## SexMale                                                            -4.428
-    ## Marital_StatusLiving with a partner                                 0.804
-    ## Marital_StatusMarital status unknown                               -1.266
-    ## Marital_StatusMarried, spouse is not present                       -0.229
-    ## Marital_StatusMarried, spouse is present                           -1.903
-    ## Marital_StatusNever married                                        -0.555
-    ## Marital_StatusSeparated                                             1.085
-    ## Marital_StatusWidowed                                              -0.380
-    ## Health_Status_GroupHigh_Health                                     -0.460
-    ## Education_LevelHigh School                                          1.871
-    ## Education_LevelAssociate's                                          1.442
-    ## Education_LevelBachelor's                                           1.573
-    ## Education_LevelMaster's                                             2.312
-    ## Education_LevelPhD or Professional                                 -0.244
-    ## Health_Status_GroupHigh_Health:Education_LevelHigh School          -1.428
-    ## Health_Status_GroupHigh_Health:Education_LevelAssociate's          -0.261
-    ## Health_Status_GroupHigh_Health:Education_LevelBachelor's            0.075
-    ## Health_Status_GroupHigh_Health:Education_LevelMaster's             -0.568
-    ## Health_Status_GroupHigh_Health:Education_LevelPhD or Professional   1.158
-    ##                                                                   Pr(>|z|)    
-    ## (Intercept)                                                        0.30462    
-    ## RaceAIAN only                                                      0.94746    
-    ## RaceAsian only                                                     0.00319 ** 
-    ## RaceBlack/African American only                                    0.85320    
-    ## RaceOther single and multiple races                                0.61256    
-    ## RaceRace Unknown                                                   0.63140    
-    ## RaceWhite only                                                     0.10699    
-    ## Age                                                                0.05864 .  
-    ## SexMale                                                           9.51e-06 ***
-    ## Marital_StatusLiving with a partner                                0.42139    
-    ## Marital_StatusMarital status unknown                               0.20535    
-    ## Marital_StatusMarried, spouse is not present                       0.81871    
-    ## Marital_StatusMarried, spouse is present                           0.05709 .  
-    ## Marital_StatusNever married                                        0.57892    
-    ## Marital_StatusSeparated                                            0.27793    
-    ## Marital_StatusWidowed                                              0.70409    
-    ## Health_Status_GroupHigh_Health                                     0.64519    
-    ## Education_LevelHigh School                                         0.06130 .  
-    ## Education_LevelAssociate's                                         0.14943    
-    ## Education_LevelBachelor's                                          0.11577    
-    ## Education_LevelMaster's                                            0.02080 *  
-    ## Education_LevelPhD or Professional                                 0.80754    
-    ## Health_Status_GroupHigh_Health:Education_LevelHigh School          0.15317    
-    ## Health_Status_GroupHigh_Health:Education_LevelAssociate's          0.79407    
-    ## Health_Status_GroupHigh_Health:Education_LevelBachelor's           0.93990    
-    ## Health_Status_GroupHigh_Health:Education_LevelMaster's             0.56979    
-    ## Health_Status_GroupHigh_Health:Education_LevelPhD or Professional  0.24705    
+    ##                                  Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)                     -0.224730   0.219683  -1.023   0.3063    
+    ## Education                        0.021305   0.048071   0.443   0.6576    
+    ## Age                             -0.004350   0.001963  -2.216   0.0267 *  
+    ## SexMale                         -0.215349   0.042685  -5.045 4.53e-07 ***
+    ## Marital_StatusLive with someone -0.066905   0.043935  -1.523   0.1278    
+    ## Race_HispNon-Hispanic Black      0.375599   0.069270   5.422 5.89e-08 ***
+    ## Race_HispHispanic                0.296652   0.063798   4.650 3.32e-06 ***
+    ## Race_HispOther                  -0.090870   0.077935  -1.166   0.2436    
+    ## Health_Status                   -0.198079   0.050770  -3.901 9.56e-05 ***
+    ## Education:Health_Status          0.024365   0.012454   1.956   0.0504 .  
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 11175  on 8965  degrees of freedom
-    ## Residual deviance: 11027  on 8939  degrees of freedom
-    ##   (1526 observations deleted due to missingness)
-    ## AIC: 11081
+    ##     Null deviance: 13032  on 10440  degrees of freedom
+    ## Residual deviance: 12875  on 10431  degrees of freedom
+    ##   (51 observations deleted due to missingness)
+    ## AIC: 12895
     ## 
     ## Number of Fisher Scoring iterations: 4
 
 ``` r
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_3))
+exp(coef(Model_3))
 ```
 
-    ##                                                       (Intercept) 
-    ##                                                         0.7346119 
-    ##                                                     RaceAIAN only 
-    ##                                                         1.0223907 
-    ##                                                    RaceAsian only 
-    ##                                                         0.4878493 
-    ##                                   RaceBlack/African American only 
-    ##                                                         0.9577035 
-    ##                               RaceOther single and multiple races 
-    ##                                                         0.8620957 
-    ##                                                  RaceRace Unknown 
-    ##                                                         0.8886537 
-    ##                                                    RaceWhite only 
-    ##                                                         0.6958126 
-    ##                                                               Age 
-    ##                                                         0.9958286 
-    ##                                                           SexMale 
-    ##                                                         0.8145058 
-    ##                               Marital_StatusLiving with a partner 
-    ##                                                         1.0902905 
-    ##                              Marital_StatusMarital status unknown 
-    ##                                                         0.8338545 
-    ##                      Marital_StatusMarried, spouse is not present 
-    ##                                                         0.9625049 
-    ##                          Marital_StatusMarried, spouse is present 
-    ##                                                         0.8737508 
-    ##                                       Marital_StatusNever married 
-    ##                                                         0.9543245 
-    ##                                           Marital_StatusSeparated 
-    ##                                                         1.2149949 
-    ##                                             Marital_StatusWidowed 
-    ##                                                         0.9385866 
-    ##                                    Health_Status_GroupHigh_Health 
-    ##                                                         0.9178195 
-    ##                                        Education_LevelHigh School 
-    ##                                                         1.4193350 
-    ##                                        Education_LevelAssociate's 
-    ##                                                         1.3843755 
-    ##                                         Education_LevelBachelor's 
-    ##                                                         1.4186673 
-    ##                                           Education_LevelMaster's 
-    ##                                                         1.9341575 
-    ##                                Education_LevelPhD or Professional 
-    ##                                                         0.8189992 
-    ##         Health_Status_GroupHigh_Health:Education_LevelHigh School 
-    ##                                                         0.7304510 
-    ##         Health_Status_GroupHigh_Health:Education_LevelAssociate's 
-    ##                                                         0.9356037 
-    ##          Health_Status_GroupHigh_Health:Education_LevelBachelor's 
-    ##                                                         1.0188526 
-    ##            Health_Status_GroupHigh_Health:Education_LevelMaster's 
-    ##                                                         0.8395150 
-    ## Health_Status_GroupHigh_Health:Education_LevelPhD or Professional 
-    ##                                                         2.6182666
-
-``` r
-plot(Model_3)
-```
-
-![](NHIS_Data_files/figure-gfm/Model%20#3:%20Demo%20+%20Health%20Status%20Grouping%20+%20Interaction-1.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#3:%20Demo%20+%20Health%20Status%20Grouping%20+%20Interaction-2.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#3:%20Demo%20+%20Health%20Status%20Grouping%20+%20Interaction-3.png)<!-- -->![](NHIS_Data_files/figure-gfm/Model%20#3:%20Demo%20+%20Health%20Status%20Grouping%20+%20Interaction-4.png)<!-- -->
+    ##                     (Intercept)                       Education 
+    ##                       0.7987316                       1.0215337 
+    ##                             Age                         SexMale 
+    ##                       0.9956599                       0.8062603 
+    ## Marital_StatusLive with someone     Race_HispNon-Hispanic Black 
+    ##                       0.9352843                       1.4558632 
+    ##               Race_HispHispanic                  Race_HispOther 
+    ##                       1.3453470                       0.9131366 
+    ##                   Health_Status         Education:Health_Status 
+    ##                       0.8203050                       1.0246638

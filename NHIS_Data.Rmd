@@ -1,194 +1,226 @@
 ---
 title: "NHIS Data"
-font-family: 'Corbel'
-author: Nicole Dodson & Kieran Yuen
-output: rmarkdown::github_document
+author: "Nicole Dodson & Kieran Yuen"
+font-family: Corbel
+output:
+  html_document:
+    df_print: paged
 ---
-
-```{r setup, include=FALSE}
+# Setup
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r Loading in NHIS data, include=FALSE}
+# Loading in NHIS data
+```{r Loading in NHIS data}
 library(readxl)
-student_datav2 <- read_excel("student_datav2.xlsx")
-View(student_datav2)
+student_datav1 <- read_excel("student_datav1.xlsx")
 ```
 
-
-```{r Cleaning Data, include=FALSE}
+# Cleaning Data
+```{r Cleaning Data}
 library(tidyverse)
-NHIS_data <- student_datav2 %>% 
-  select(educ_a,
+NHIS_data <- student_datav1 %>% 
+  select(hhx,
+         educ_a,
+         hisp_a,
          raceallp_a,
          agep_a,
          sex_a,
          marstat_a,
          phstat_a,
          covidtest_a) %>%
-  rename(Education_Level = educ_a,
+  rename(Education = educ_a,
+         Hisp = hisp_a,
          Race = raceallp_a,
          Age = agep_a,
          Sex = sex_a,
          Marital_Status = marstat_a,
          Health_Status = phstat_a,
          Covid_Test= covidtest_a) %>%
+  
   na.omit() %>% 
-  filter(Covid_Test =="Yes"|
-           Covid_Test == "No") %>%
-  mutate(Education_Level = recode(Education_Level,
-                      "12th grade, no diploma" = "No High School",
-                      "Associate degree: academic program" = "Associate's",
-                      "Associate degree: occupational, technical, or vocational program" = "Associate's",
-                      "Bachelor's degree (Example: BA, AB, BS, BBA)" = "Bachelor's",
-                      "Doctoral degree (Example: PhD, EdD)" = "PhD or Professional",
-                      "Don't Know" = NA_character_,
-                      "GED or equivalent" = "High School",
-                      "Grade 1-11" = "No High School",
-                      "High School Graduate" = "High School",
-                      "Master's degree (Example: MA, MS, MEng, MEd, MBA)" = "Master's",
-                      "Never attended/kindergarten only" = "No High School",
-                      "Professional School degree (Example: MD, DDS, DVM, JD)" = "PhD or Professional",
-                      "Refused" = NA_character_,
-                      "Some college, no degree" = "Some college")) %>%
+  
+  filter(Covid_Test =="1"| #YestoCovidTest
+           Covid_Test == "2") %>% #NotoCovidTest 
+  
+  mutate(Covid_Test = recode(Covid_Test,
+                            '1' = 1,#YestoCovidTest
+                            '2' = 0)) %>% #NotoCovidTest 
+                              
+  mutate(Education = recode(Education,
+                            '0' = 1,#nohighschool
+                            '1' = 1,#nohighschool
+                            '2' = 1,#nohighschool
+                            '3' = 2,#highschool
+                            '4' = 2,#highschool
+                            '5' = 3,#somecollege
+                            '6' = 4,#associates
+                            '7' = 4,#associates
+                            '8' = 5,#bachelors
+                            '9' = 6,#masters
+                            '10' = 7,#phdprofessional
+                            '11' = 7,#phdprofessional
+                            '97' = NA_real_,
+                            '99' = NA_real_)) %>%
+  
+  mutate(Hisp = recode(Hisp,
+                            '1' = "Hispanic",
+                            '2' = "Non_hispanic")) %>% 
+  
   mutate(Race = recode(Race,
-                      "AIAN and any other group" = "AIAN and any other group",
-                      "AIAN only" = "AIAN only",
-                      "Asian only" = "Asian only",
-                      "Black/African American only" = "Black/African American only",
-                      "Don't know" = NA_character_,
-                      "Not Ascertained" = "Race Unknown",
-                      "Other single and multiple races" = "Other single and multiple races",
-                      "Refused" = NA_character_,
-                      "White only" = "White only")) %>%
+                            '1' = "White only",
+                            '2' = "Black/African American only",
+                            '3' = "Asian only",
+                            '4' = "AIAN only",
+                            '5' = "AIAN and any other group",
+                            '6' = "Other single and multiple races",
+                            '7' = "Refused",
+                            '8' = "Not Ascertained",
+                            '9' = "Don't know")) %>%
+  
+  mutate(Race_Hisp = ifelse(Hisp == 'Non_hispanic' & Race == 'Black/African American only', 
+                            'Non-Hispanic Black',
+                            ifelse(Hisp == 'Non_hispanic' & Race == 'White only', 
+                                   'Non-Hispanic White',
+                                   ifelse(Hisp == 'Non_hispanic' & Race == 'AIAN and any other group'|
+                                            Hisp == 'Non_hispanic' & Race == 'AIAN only'|
+                                            Hisp == 'Non_hispanic' & Race == 'Asian only'|
+                                            Hisp == 'Non_hispanic' & Race == 'Other single and multiple races', 
+                                          'Other',
+                                          'Hispanic')))) %>%
+                            
   mutate(Sex = recode(Sex,
-                      "Don't Know" = NA_character_,
-                      "Female" = "Female",
-                      "Male" = "Male",
-                      "Refused" = NA_character_)) %>%
+                            '1' = "Male",
+                            '2' = "Female",
+                            '7' = NA_character_,
+                            '9' = NA_character_)) %>%
+  
   mutate(Marital_Status = recode(Marital_Status,
-                      "Divorced" = "Divorced",
-                      "Living with a partner" = "Living with a partner",
-                      "Married, spouse is not present" = "Married, spouse is not present",
-                      "Married, spouse is present" = "Married, spouse is present",
-                      "Married, spouse presence unknown" = NA_character_,
-                      "Never married" = "Never married",
-                      "Separated" = "Separated",
-                      "Unknown marital status" = "Marital status unknown",
-                      "Widowed" = "Widowed")) %>%
+                            '1' = "Live with someone",
+                            '2' = "Live alone",
+                            '3' = "Live alone",
+                            '4' = "Live alone",
+                            '5' = "Live alone",
+                            '6' = "Live alone",
+                            '7' = "Live alone",
+                            '8' = "Live with someone",
+                            '9' = "Live alone")) %>%
+  
   mutate(Health_Status = recode(Health_Status,
-                      "Don't Know" = NA_character_,
-                      "Excellent" = "Excellent",
-                      "Fair" = "Fair",
-                      "Good" = "Good",
-                      "Poor" = "Poor",
-                      "Refused" = NA_character_,
-                      "Very Good" = "Very Good")) %>%
-    mutate(Covid_Test = recode(Covid_Test,
-                      "NA" = NA_character_,
-                      "No" = "No",
-                      "Yes" = "Yes",
-                      "Not Ascertained" = NA_character_,
-                      "Refused" = NA_character_,
-                      "Don't Know" = NA_character_))
+                            '1' = 5,
+                            '2' = 4,
+                            '3' = 3,
+                            '4' = 2,
+                            '5' = 1,
+                            '7' = NA_real_,
+                            '9' = NA_real_,
+                            ))
 ```
 
 
 
-```{r Changing Data Types for variables, include=FALSE}
-NHIS_data$Education_Level <- as.factor(NHIS_data$Education_Level)
-NHIS_data$Education_Level <- factor(NHIS_data$Education_Level,
-                              levels = c("No High School",
-                                         "High School",
-                                         "Some College",
-                                         "Associate's",
-                                         "Bachelor's",
-                                         "Master's",
-                                         "PhD or Professional"))
+# Changing Data Types for variables
+```{r Changing Data Types for variables}
+NHIS_data$Education <- as.numeric(NHIS_data$Education)
 
-NHIS_data$Race <- as.factor(NHIS_data$Race)
+NHIS_data$Race_Hisp <- as.factor(NHIS_data$Race_Hisp)
+NHIS_data$Race_Hisp <- factor(NHIS_data$Race_Hisp,
+                              levels = c("Non-Hispanic White",
+                                         "Non-Hispanic Black",
+                                         "Hispanic",
+                                         "Other"))
+
+NHIS_data$Age <- as.numeric(NHIS_data$Age)
 
 NHIS_data$Sex <- as.factor(NHIS_data$Sex)
 
 NHIS_data$Marital_Status <- as.factor(NHIS_data$Marital_Status)
 
-NHIS_data$Health_Status <- as.factor(NHIS_data$Health_Status)
+NHIS_data$Health_Status <- as.numeric(NHIS_data$Health_Status)
 
 NHIS_data$Covid_Test <- as.factor(NHIS_data$Covid_Test)
 ```
 
 
-
-```{r Create Groupings of Health Statuses, include=FALSE}
-High_Health_Status <- ((NHIS_data$Health_Status == "Excellent") |
-                         (NHIS_data$Health_Status == "Very Good") |
-                         (NHIS_data$Health_Status == "Good"))
-
-Low_Health_Status <- ((NHIS_data$Health_Status == "Fair") |
-                        (NHIS_data$Health_Status == "Poor"))
-
-Health_Status_Group <- factor((1*Low_Health_Status +
-                                 2*High_Health_Status),
-                              levels = c(1, 2),
-                              labels = c( "Low_Health", "High_Health"))
+# Summary tables to check groupings are accurate
+```{r Summary tables to check groupings are accurate}
+table(NHIS_data$Education)
+table(NHIS_data$Hisp)
+table(NHIS_data$Race)
+table(NHIS_data$Race_Hisp)
+table(NHIS_data$Sex)
+table(NHIS_data$Marital_Status)
+table(NHIS_data$Health_Status)
+table(NHIS_data$Covid_Test)
 ```
+
+
+
+```{r Summary Statistics}
+library(gmodels)
+CrossTable(NHIS_data$Sex, NHIS_data$Covid_Test, prop.t=TRUE, prop.r=TRUE, prop.c=TRUE)
+
+library(gmodels)
+CrossTable(NHIS_data$Race_Hisp, NHIS_data$Covid_Test, prop.t=TRUE, prop.r=TRUE, prop.c=TRUE)
+```
+
 
 
 
 # Regression Models
 ## Model #1: Demographic information only
 ```{r Model #1: Demographic information only}
-Model_1 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status,
-                        data = NHIS_data,
-                        family = binomial)
+Model_1 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_1)
 
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_1))
-
-plot(Model_1)
+exp(coef(Model_1))
 ```
 
-## Model #2: Demo + Health Status Grouping
-```{r Model #2: Demo + Health Status Grouping}
-Model_2 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status
-                        + Health_Status_Group,
-                        data = NHIS_data,
-                        family = binomial)
+
+
+## Model #2: Demo + Health Status
+```{r Model #2: Demo + Health Status}
+Model_2 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + Health_Status,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_2)
 
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_2))
-
-plot(Model_2)
+exp(coef(Model_2))
 ```
 
 
 
-## Model #3: Demo + Health Status Grouping + Interaction
-```{r Model #3: Demo + Health Status Grouping + Interaction}
-Model_3 <- glm(Covid_Test ~ Race 
-                        + Age 
-                        + Sex 
-                        + Marital_Status
-                        + Health_Status_Group
-                        + Education_Level*Health_Status_Group,
-                        data = NHIS_data,
-                        family = binomial)
+## Model #3: Demo + Health Status + Interaction
+```{r Model #3: Demo + Health Status + Interaction}
+Model_3 <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + Health_Status
+               + Education*Health_Status,
+               data = NHIS_data,
+               family = binomial)
 
 summary(Model_3)
 
 #This tells us the "Odds Ratios"
-exp(coefficients(Model_3))
-
-plot(Model_3)
+exp(coef(Model_3))
 ```
 
