@@ -3,8 +3,8 @@ title: "NHIS Data"
 author: "Nicole Dodson & Kieran Yuen"
 font-family: Corbel
 output:
-  html_document:
-    df_print: paged
+  github_document:
+    toc: true
 ---
 # Setup
 ```{r setup}
@@ -21,8 +21,7 @@ student_datav1 <- read_excel("student_datav1.xlsx")
 ```{r Cleaning Data}
 library(tidyverse)
 NHIS_data <- student_datav1 %>% 
-  select(hhx,
-         educ_a,
+  select(educ_a,
          hisp_a,
          raceallp_a,
          agep_a,
@@ -116,6 +115,7 @@ NHIS_data <- student_datav1 %>%
                             '7' = NA_real_,
                             '9' = NA_real_,
                             ))
+
 ```
 
 
@@ -181,8 +181,24 @@ Model_1 <- glm(Covid_Test ~ Education
 
 summary(Model_1)
 
-#This tells us the "Odds Ratios"
-exp(coef(Model_1))
+library(questionr)
+odds.ratio(Model_1) #This tells us the "Odds Ratios"
+
+library(oddsratio)
+or_glm(data = NHIS_data, model = Model_1, 
+       incr = list(Education = 1, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 2, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 3, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 4, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 5, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 6, Age = 1))
+or_glm(data = NHIS_data, model = Model_1,
+       incr = list(Education = 7, Age = 1))
 ```
 
 
@@ -200,8 +216,20 @@ Model_2 <- glm(Covid_Test ~ Education
 
 summary(Model_2)
 
-#This tells us the "Odds Ratios"
-exp(coef(Model_2))
+library(questionr)
+odds.ratio(Model_2) #This tells us the "Odds Ratios"
+
+library(oddsratio)
+or_glm(data = NHIS_data, model = Model_2, 
+       incr = list(Education = 1, Age = 1, Health_Status = 1))
+or_glm(data = NHIS_data, model = Model_2,
+       incr = list(Education = 1, Age = 1, Health_Status = 2))
+or_glm(data = NHIS_data, model = Model_2,
+       incr = list(Education = 1, Age = 1, Health_Status = 3))
+or_glm(data = NHIS_data, model = Model_2,
+       incr = list(Education = 1, Age = 1, Health_Status = 4))
+or_glm(data = NHIS_data, model = Model_2,
+       incr = list(Education = 1, Age = 1, Health_Status = 5))
 ```
 
 
@@ -220,7 +248,7 @@ Model_3 <- glm(Covid_Test ~ Education
 
 summary(Model_3)
 
-#This tells us the "Odds Ratios"
-exp(coef(Model_3))
+library(questionr)
+odds.ratio(Model_3) #This tells us the "Odds Ratios"
 ```
 
