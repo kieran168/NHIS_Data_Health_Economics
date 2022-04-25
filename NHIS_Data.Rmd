@@ -201,9 +201,27 @@ CrossTable(NHIS_data$Age_Group,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.
 ```
 
 
+## Summary Statistics: Numeric Variables
+```{r Summary Statistics: Numeric Variables}
+library(psych)
+describe(NHIS_data$Age[NHIS_data$Covid_Test == "0"])
+describe(NHIS_data$Age[NHIS_data$Covid_Test == "1"])
 
+describe(NHIS_data$Education[NHIS_data$Covid_Test == "0"])
+describe(NHIS_data$Education[NHIS_data$Covid_Test == "1"])
 
+describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "0"])
+describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "1"])
 
+describeBy(NHIS_data, group = NHIS_data$Covid_Test)
+```
+
+# Correlation Check
+```{r Correlation Check}
+cor(NHIS_data$Age, NHIS_data$Health_Status)
+cor(NHIS_data$Age, NHIS_data$Education)
+cor(NHIS_data$Education, NHIS_data$Health_Status)
+```
 
 
 # Logistic Regression
@@ -345,6 +363,32 @@ summary(Model_3a)
 library(questionr)
 odds.ratio(Model_3a) #This tells us the "Odds Ratios"
 ```
+
+
+
+
+# Logistic Regression (with Health Status levels)
+## Model #2b: Demographic + Health Status (with Health Status levels)
+```{r Model #2b: Demographic + Health Status (with Health Status levels)}
+Model_2b <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + as.factor(Health_Status),
+               data = NHIS_data,
+               family = binomial)
+
+summary(Model_2b)
+
+library(questionr)
+odds.ratio(Model_2b) #This tells us the "Odds Ratios"
+```
+
+
+
+
+
 
 # OLS Regression (dep. var. Health Status)
 ## Model #4: Demographic + Health Status
