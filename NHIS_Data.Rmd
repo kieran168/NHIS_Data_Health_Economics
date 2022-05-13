@@ -1,6 +1,6 @@
 ---
 title: "NHIS Data"
-author: "Nicole Dodson & Kieran Yuen"
+author: "Kieran Yuen"
 font-family: Corbel
 output:
   github_document:
@@ -38,26 +38,26 @@ NHIS_data <- student_datav1 %>%
          Health_Status = phstat_a,
          Covid_Test= covidtest_a) %>%
   
-  filter(Covid_Test =="1"| #YestoCovidTest
-           Covid_Test == "2") %>% #NotoCovidTest 
+  filter(Covid_Test =="1"| #Yes_Covid_Test
+           Covid_Test == "2") %>% #No_Covid_Test 
   
   mutate(Covid_Test = recode(Covid_Test,
-                            '1' = 1,#YestoCovidTest
-                            '2' = 0)) %>% #NotoCovidTest 
+                            '1' = 1,#Yes_Covid_Test
+                            '2' = 0)) %>% #No_Covid_Test 
                               
   mutate(Education = recode(Education,
-                            '0' = 1,#nohighschool
-                            '1' = 1,#nohighschool
-                            '2' = 1,#nohighschool
-                            '3' = 2,#highschool
-                            '4' = 2,#highschool
-                            '5' = 3,#somecollege
-                            '6' = 4,#associates
-                            '7' = 4,#associates
-                            '8' = 5,#bachelors
-                            '9' = 6,#masters
-                            '10' = 7,#phdprofessional
-                            '11' = 7,#phdprofessional
+                            '0' = 0,#Below_Bachelors
+                            '1' = 0,#Below_Bachelors
+                            '2' = 0,#Below_Bachelors
+                            '3' = 0,#Below_Bachelors
+                            '4' = 0,#Below_Bachelors
+                            '5' = 0,#Below_Bachelors
+                            '6' = 0,#Below_Bachelors
+                            '7' = 0,#Below_Bachelors
+                            '8' = 1,#Bachelors_Or_Above
+                            '9' = 1,#Bachelors_Or_Above
+                            '10' = 1,#Bachelors_Or_Above
+                            '11' = 1,#Bachelors_Or_Above
                             '97' = NA_real_,
                             '99' = NA_real_)) %>%
   
@@ -78,38 +78,46 @@ NHIS_data <- student_datav1 %>%
   
   mutate(Race_Hisp = ifelse(Hisp == 'Non_hispanic' & Race == 'Black/African American only', 
                             'Non-Hispanic Black',
-                            ifelse(Hisp == 'Non_hispanic' & Race == 'White only', 
-                                   'Non-Hispanic White',
+                            
+                            ifelse(Hisp == 'Non_hispanic' & Race == 'White only', 'Non-Hispanic White',
+                                   
                                    ifelse(Hisp == 'Non_hispanic' & Race == 'AIAN and any other group'|
                                             Hisp == 'Non_hispanic' & Race == 'AIAN only'|
                                             Hisp == 'Non_hispanic' & Race == 'Asian only'|
                                             Hisp == 'Non_hispanic' & Race == 'Other single and multiple races', 
                                           'Other',
+                                          
                                           'Hispanic')))) %>%
                             
+  mutate(Race_Hisp = recode(Race_Hisp,
+                            "Non-Hispanic Black" = 0, #Other
+                            "Non-Hispanic White" = 1, #Non_Hispanic_White
+                            "Other" = 0,  #Other
+                            "Hispanic" = 0)) %>%  #Other
+  
   mutate(Sex = recode(Sex,
-                            '1' = "Male",
-                            '2' = "Female",
-                            '7' = NA_character_,
-                            '9' = NA_character_)) %>%
+                            '1' = 1, #Male
+                            '2' = 0, #Female
+                            '7' = NA_real_,
+                            '9' = NA_real_)) %>%
   
   mutate(Marital_Status = recode(Marital_Status,
-                            '1' = "Married",
-                            '2' = "Married",
-                            '3' = "Not Married",
-                            '4' = "Not Married",
-                            '5' = "Not Married",
-                            '6' = "Not Married",
-                            '7' = "Not Married",
-                            '8' = "Not Married",
-                            '9' = "Not Married")) %>%
+                            '1' = 1, #Married
+                            '2' = 1, #Married
+                            '3' = 0, #Not_Married
+                            '4' = 0, #Not_Married
+                            '5' = 0, #Not_Married
+                            '6' = 0, #Not_Married
+                            '7' = 0, #Not_Married
+                            '8' = 0, #Not_Married
+                            '9' = 0)) %>%  #Not_Married
   
   mutate(Health_Status = recode(Health_Status,
-                            '1' = 5,
-                            '2' = 4,
-                            '3' = 3,
-                            '4' = 2,
-                            '5' = 1,
+                            '1' = 1, #High_Health_Status
+                            '2' = 1, #High_Health_Status
+                            '3' = 1, #High_Health_Status
+                            '4' = 0, #Low_Health_Status
+                            '5' = 0, #Low_Health_Status
                             '7' = NA_real_,
                             '9' = NA_real_,
                             )) %>%
@@ -127,15 +135,10 @@ NHIS_data <- student_datav1 %>%
 
 
 # Changing Data Types for variables
-```{r Changing Data Types for variables}
-NHIS_data$Education <- as.numeric(NHIS_data$Education)
+```{r Changing Data Types for variables, results="hide"}
+NHIS_data$Education <- as.factor(NHIS_data$Education)
 
 NHIS_data$Race_Hisp <- as.factor(NHIS_data$Race_Hisp)
-NHIS_data$Race_Hisp <- factor(NHIS_data$Race_Hisp,
-                              levels = c("Non-Hispanic White",
-                                         "Non-Hispanic Black",
-                                         "Hispanic",
-                                         "Other"))
 
 NHIS_data$Age <- as.numeric(NHIS_data$Age)
 
@@ -143,7 +146,7 @@ NHIS_data$Sex <- as.factor(NHIS_data$Sex)
 
 NHIS_data$Marital_Status <- as.factor(NHIS_data$Marital_Status)
 
-NHIS_data$Health_Status <- as.numeric(NHIS_data$Health_Status)
+NHIS_data$Health_Status <- as.factor(NHIS_data$Health_Status)
 
 NHIS_data$Covid_Test <- as.factor(NHIS_data$Covid_Test)
 
@@ -152,7 +155,7 @@ NHIS_data$Age_Group <- as.factor(NHIS_data$Age_Group)
 
 
 # Summary tables to check groupings are accurate
-```{r Summary tables to check groupings are accurate}
+```{r Summary tables to check groupings are accurate, results="hide"}
 table(NHIS_data$Education)
 table(NHIS_data$Hisp)
 table(NHIS_data$Race)
@@ -167,7 +170,7 @@ table(NHIS_data$Age_Group)
 
 # Summary Statistics
 ## Summary Statistics: COVID Test
-```{r Summary Statistics: COVID Test}
+```{r Summary Statistics: COVID Test, results="hide"}
 library(gmodels)
 
 CrossTable(NHIS_data$Education, NHIS_data$Covid_Test, prop.chisq=FALSE, prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
@@ -184,44 +187,96 @@ CrossTable(NHIS_data$Age_Group,NHIS_data$Covid_Test, prop.chisq=FALSE,  prop.t=F
 ```
 
 ## Summary Statistics: Health Status
-```{r Summary Statistics: Health Status}
+```{r Summary Statistics: Health Status, results="hide"}
 library(gmodels)
-
-CrossTable(NHIS_data$Education, NHIS_data$Health_Status, prop.chisq=FALSE, prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
-
-CrossTable(NHIS_data$Race_Hisp, NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
-
-CrossTable(NHIS_data$Sex,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
-
-CrossTable(NHIS_data$Marital_Status,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
 
 CrossTable(NHIS_data$Covid_Test,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
 
+CrossTable(NHIS_data$Marital_Status,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
+
+CrossTable(NHIS_data$Sex,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
+
 CrossTable(NHIS_data$Age_Group,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
+
+CrossTable(NHIS_data$Race_Hisp, NHIS_data$Health_Status, prop.chisq=FALSE,  prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
+
+CrossTable(NHIS_data$Education, NHIS_data$Health_Status, prop.chisq=FALSE, prop.t=FALSE, prop.r=TRUE, prop.c=FALSE)
 ```
 
 
-## Summary Statistics: Numeric Variables
-```{r Summary Statistics: Numeric Variables}
+## Summary Statistics: Overall
+```{r Summary Statistics: Overall, results="hide"}
 library(psych)
-describe(NHIS_data$Age[NHIS_data$Covid_Test == "0"])
-describe(NHIS_data$Age[NHIS_data$Covid_Test == "1"])
+describeBy(NHIS_data, group = NHIS_data$Health_Status)
+describeBy(NHIS_data)
 
-describe(NHIS_data$Education[NHIS_data$Covid_Test == "0"])
-describe(NHIS_data$Education[NHIS_data$Covid_Test == "1"])
-
-describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "0"])
-describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "1"])
-
-describeBy(NHIS_data, group = NHIS_data$Covid_Test)
 ```
 
-# Correlation Check
-```{r Correlation Check}
-cor(NHIS_data$Age, NHIS_data$Health_Status)
-cor(NHIS_data$Age, NHIS_data$Education)
-cor(NHIS_data$Education, NHIS_data$Health_Status)
+
+
+
+
+
+## Summary Statistics: Prof.De's
+```{r Summary Statistics: Prof.De, results="hide"}
+library(tidyverse)
+#Health Status
+NHIS_data %>% 
+  count(Health_Status) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Health_Status==1)))
+sd(as.numeric(as.factor(NHIS_data$Health_Status==0)))
+
+
+#Education
+NHIS_data %>% 
+  count(Education) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Education==1)))
+sd(as.numeric(as.factor(NHIS_data$Education==0)))
+
+#Race
+NHIS_data %>% 
+  count(Race_Hisp) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Race_Hisp==1)))
+sd(as.numeric(as.factor(NHIS_data$Race_Hisp==0)))
+
+#Sex
+NHIS_data %>% 
+  count(Sex) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Sex==1)))
+sd(as.numeric(as.factor(NHIS_data$Sex==0)))
+
+#Marital Status
+NHIS_data %>% 
+  count(Marital_Status) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Marital_Status==1)))
+sd(as.numeric(as.factor(NHIS_data$Marital_Status==0)))
+
+#Covid Test
+NHIS_data %>% 
+  count(Covid_Test) %>% 
+  mutate(percent = n / sum(n))
+
+sd(as.numeric(as.factor(NHIS_data$Covid_Test==1)))
+sd(as.numeric(as.factor(NHIS_data$Covid_Test==0)))
+
 ```
+
+
+
+
+
+
+
 
 
 # Logistic Regression
@@ -240,21 +295,7 @@ summary(Model_1)
 library(questionr)
 odds.ratio(Model_1) #This tells us the "Odds Ratios"
 
-# library(oddsratio)
-# or_glm(data = NHIS_data, model = Model_1, 
-#        incr = list(Education = 1, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 2, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 3, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 4, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 5, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 6, Age = 1))
-# or_glm(data = NHIS_data, model = Model_1,
-#        incr = list(Education = 7, Age = 1))
+nobs(Model_1)
 ```
 
 
@@ -275,144 +316,51 @@ summary(Model_2)
 library(questionr)
 odds.ratio(Model_2) #This tells us the "Odds Ratios"
 
-# library(oddsratio)
-# or_glm(data = NHIS_data, model = Model_2, 
-#        incr = list(Education = 1, Age = 1, Health_Status = 1))
-# or_glm(data = NHIS_data, model = Model_2,
-#        incr = list(Education = 1, Age = 1, Health_Status = 2))
-# or_glm(data = NHIS_data, model = Model_2,
-#        incr = list(Education = 1, Age = 1, Health_Status = 3))
-# or_glm(data = NHIS_data, model = Model_2,
-#        incr = list(Education = 1, Age = 1, Health_Status = 4))
-# or_glm(data = NHIS_data, model = Model_2,
-#        incr = list(Education = 1, Age = 1, Health_Status = 5))
+nobs(Model_2)
 ```
 
 
 
-## Model #3: Demographic + Health Status + Interaction of Education & Health Status
-```{r Model #3: Demographic + Health Status + Interaction of Education & Health Status}
-Model_3 <- glm(Covid_Test ~ Education
+
+
+
+## Model #2a: Demographic + Health Status (with only "Other" as Race)
+```{r Model #2a: Demographic + Health Status (with only "Other" as Race)}
+Model_2a <- glm(Covid_Test ~ Education
                + Age 
                + Sex 
                + Marital_Status
-               + Race_Hisp
-               + Health_Status
-               + Education*Health_Status,
-               data = NHIS_data,
-               family = binomial)
-
-summary(Model_3)
-
-library(questionr)
-odds.ratio(Model_3) #This tells us the "Odds Ratios"
-```
-
-# Logistic Regression (with Age Groups)
-## Model #1a: Demographic information only (with Age Groups)
-```{r Model #1a: Demographic information only (with Age Groups)}
-Model_1a <- glm(Covid_Test ~ Education
-               + Age_Group
-               + Sex 
-               + Marital_Status
-               + Race_Hisp,
-               data = NHIS_data,
-               family = binomial)
-
-summary(Model_1a)
-
-library(questionr)
-odds.ratio(Model_1a) #This tells us the "Odds Ratios"
-```
-
-
-
-## Model #2a: Demographic + Health Status (with Age Groups)
-```{r Model #2a: Demographic + Health Status (with Age Groups)}
-Model_2a <- glm(Covid_Test ~ Education
-               + Age_Group 
-               + Sex 
-               + Marital_Status
-               + Race_Hisp
                + Health_Status,
-               data = NHIS_data,
+               data = subset(NHIS_data,
+                             Race_Hisp == 0),
                family = binomial)
 
 summary(Model_2a)
 
 library(questionr)
 odds.ratio(Model_2a) #This tells us the "Odds Ratios"
-```
 
-
-
-## Model #3a: Demographic + Health Status + Interaction of Education & Health Status (with Age Groups)
-```{r Model #3a: Demographic + Health Status + Interaction of Education & Health Status (with Age Groups)}
-Model_3a <- glm(Covid_Test ~ Education
-               + Age_Group 
-               + Sex 
-               + Marital_Status
-               + Race_Hisp
-               + Health_Status
-               + Education*Health_Status,
-               data = NHIS_data,
-               family = binomial)
-
-summary(Model_3a)
-
-library(questionr)
-odds.ratio(Model_3a) #This tells us the "Odds Ratios"
+nobs(Model_2a)
 ```
 
 
 
 
-# Logistic Regression (with Health Status levels)
-## Model #2b: Demographic + Health Status (with Health Status levels)
-```{r Model #2b: Demographic + Health Status (with Health Status levels)}
+## Model #2b: Demographic + Health Status (with only "Non_Hispanic_White" as Race)
+```{r Model #2b: Demographic + Health Status (with only "Non_Hispanic_White" as Race)}
 Model_2b <- glm(Covid_Test ~ Education
                + Age 
                + Sex 
                + Marital_Status
-               + Race_Hisp
-               + as.factor(Health_Status),
-               data = NHIS_data,
+               + Health_Status,
+               data = subset(NHIS_data,
+                             Race_Hisp == 1),
                family = binomial)
 
 summary(Model_2b)
 
 library(questionr)
 odds.ratio(Model_2b) #This tells us the "Odds Ratios"
+
+nobs(Model_2b)
 ```
-
-
-
-
-
-
-# OLS Regression (dep. var. Health Status)
-## Model #4: Demographic + Health Status
-```{r Model #4: Demographic + Health Status}
-Model_4 <- lm(Health_Status ~ as.factor(Education)
-               + Age_Group 
-               + Sex 
-               + Marital_Status
-               + Race_Hisp
-               + Covid_Test,
-               data = NHIS_data)
-
-summary(Model_4)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
