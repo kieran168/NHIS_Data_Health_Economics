@@ -13,6 +13,9 @@ Nicole Dodson & Kieran Yuen
       - [Summary Statistics: COVID Test](#summary-statistics-covid-test)
       - [Summary Statistics: Health
         Status](#summary-statistics-health-status)
+      - [Summary Statistics: Numeric
+        Variables](#summary-statistics-numeric-variables)
+  - [Correlation Check](#correlation-check)
   - [Logistic Regression](#logistic-regression)
       - [Model \#1: Demographic information
         only](#model-1-demographic-information-only)
@@ -30,6 +33,10 @@ Nicole Dodson & Kieran Yuen
       - [Model \#3a: Demographic + Health Status + Interaction of
         Education & Health Status (with Age
         Groups)](#model-3a-demographic--health-status--interaction-of-education--health-status-with-age-groups)
+  - [Logistic Regression (with Health Status
+    levels)](#logistic-regression-with-health-status-levels)
+      - [Model \#2b: Demographic + Health Status (with Health Status
+        levels)](#model-2b-demographic--health-status-with-health-status-levels)
   - [OLS Regression (dep. var. Health
     Status)](#ols-regression-dep-var-health-status)
       - [Model \#4: Demographic + Health
@@ -710,6 +717,137 @@ CrossTable(NHIS_data$Age_Group,NHIS_data$Health_Status, prop.chisq=FALSE,  prop.
     ## 
     ## 
 
+## Summary Statistics: Numeric Variables
+
+``` r
+library(psych)
+```
+
+    ## Warning: package 'psych' was built under R version 4.0.5
+
+    ## 
+    ## Attaching package: 'psych'
+
+    ## The following objects are masked from 'package:ggplot2':
+    ## 
+    ##     %+%, alpha
+
+``` r
+describe(NHIS_data$Age[NHIS_data$Covid_Test == "0"])
+```
+
+    ##    vars    n  mean    sd median trimmed   mad min max range skew kurtosis   se
+    ## X1    1 7138 46.85 11.18     47   47.05 14.83  27  64    37 -0.1    -1.27 0.13
+
+``` r
+describe(NHIS_data$Age[NHIS_data$Covid_Test == "1"])
+```
+
+    ##    vars    n  mean    sd median trimmed   mad min max range  skew kurtosis  se
+    ## X1    1 3303 46.27 11.21     46    46.4 14.83  27  64    37 -0.06    -1.27 0.2
+
+``` r
+describe(NHIS_data$Education[NHIS_data$Covid_Test == "0"])
+```
+
+    ##    vars    n mean   sd median trimmed  mad min max range  skew kurtosis   se
+    ## X1    1 7138 3.84 1.67      4    3.84 1.48   1   7     6 -0.03    -1.14 0.02
+
+``` r
+describe(NHIS_data$Education[NHIS_data$Covid_Test == "1"])
+```
+
+    ##    vars    n mean   sd median trimmed  mad min max range  skew kurtosis   se
+    ## X1    1 3303 4.05 1.67      4    4.06 1.48   1   7     6 -0.13    -1.07 0.03
+
+``` r
+describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "0"])
+```
+
+    ##    vars    n mean   sd median trimmed  mad min max range  skew kurtosis   se
+    ## X1    1 7138 3.73 1.02      4    3.82 1.48   1   5     4 -0.52    -0.28 0.01
+
+``` r
+describe(NHIS_data$Health_Status[NHIS_data$Covid_Test == "1"])
+```
+
+    ##    vars    n mean   sd median trimmed  mad min max range skew kurtosis   se
+    ## X1    1 3303 3.66 1.06      4    3.74 1.48   1   5     4 -0.5    -0.35 0.02
+
+``` r
+describeBy(NHIS_data, group = NHIS_data$Covid_Test)
+```
+
+    ## 
+    ##  Descriptive statistics by group 
+    ## group: 0
+    ##                 vars    n  mean    sd median trimmed   mad min max range  skew
+    ## Education          1 7138  3.84  1.67      4    3.84  1.48   1   7     6 -0.03
+    ## Hisp*              2 7138  1.87  0.34      2    1.96  0.00   1   2     1 -2.20
+    ## Race*              3 7138  7.80  2.22      9    8.26  0.00   1   9     8 -1.49
+    ## Age                4 7138 46.85 11.18     47   47.05 14.83  27  64    37 -0.10
+    ## Sex*               5 7138  1.49  0.50      1    1.49  0.00   1   2     1  0.02
+    ## Marital_Status*    6 7138  1.46  0.50      1    1.45  0.00   1   2     1  0.16
+    ## Health_Status      7 7138  3.73  1.02      4    3.82  1.48   1   5     4 -0.52
+    ## Covid_Test*        8 7138  1.00  0.00      1    1.00  0.00   1   1     0   NaN
+    ## Race_Hisp*         9 7138  1.63  1.02      1    1.42  0.00   1   4     3  1.31
+    ## Age_Group*        10 7138  2.71  1.10      3    2.76  1.48   1   4     3 -0.21
+    ##                 kurtosis   se
+    ## Education          -1.14 0.02
+    ## Hisp*               2.84 0.00
+    ## Race*               0.61 0.03
+    ## Age                -1.27 0.13
+    ## Sex*               -2.00 0.01
+    ## Marital_Status*    -1.97 0.01
+    ## Health_Status      -0.28 0.01
+    ## Covid_Test*          NaN 0.00
+    ## Race_Hisp*          0.20 0.01
+    ## Age_Group*         -1.31 0.01
+    ## ------------------------------------------------------------ 
+    ## group: 1
+    ##                 vars    n  mean    sd median trimmed   mad min max range  skew
+    ## Education          1 3303  4.05  1.67      4    4.06  1.48   1   7     6 -0.13
+    ## Hisp*              2 3303  1.85  0.36      2    1.94  0.00   1   2     1 -1.95
+    ## Race*              3 3303  7.67  2.29      9    8.09  0.00   1   9     8 -1.33
+    ## Age                4 3303 46.27 11.21     46   46.40 14.83  27  64    37 -0.06
+    ## Sex*               5 3303  1.43  0.50      1    1.42  0.00   1   2     1  0.26
+    ## Marital_Status*    6 3303  1.49  0.50      1    1.49  0.00   1   2     1  0.03
+    ## Health_Status      7 3303  3.66  1.06      4    3.74  1.48   1   5     4 -0.50
+    ## Covid_Test*        8 3303  2.00  0.00      2    2.00  0.00   2   2     0   NaN
+    ## Race_Hisp*         9 3303  1.67  1.00      1    1.49  0.00   1   4     3  1.17
+    ## Age_Group*        10 3303  2.65  1.11      3    2.68  1.48   1   4     3 -0.15
+    ##                 kurtosis   se
+    ## Education          -1.07 0.03
+    ## Hisp*               1.81 0.01
+    ## Race*               0.16 0.04
+    ## Age                -1.27 0.20
+    ## Sex*               -1.93 0.01
+    ## Marital_Status*    -2.00 0.01
+    ## Health_Status      -0.35 0.02
+    ## Covid_Test*          NaN 0.00
+    ## Race_Hisp*         -0.08 0.02
+    ## Age_Group*         -1.33 0.02
+
+# Correlation Check
+
+``` r
+cor(NHIS_data$Age, NHIS_data$Health_Status)
+```
+
+    ## [1] -0.2017515
+
+``` r
+cor(NHIS_data$Age, NHIS_data$Education)
+```
+
+    ## [1] -0.1170322
+
+``` r
+cor(NHIS_data$Education, NHIS_data$Health_Status)
+```
+
+    ## [1] 0.2747467
+
 # Logistic Regression
 
 ## Model \#1: Demographic information only
@@ -761,6 +899,13 @@ library(questionr)
 ```
 
     ## Warning: package 'questionr' was built under R version 4.0.5
+
+    ## 
+    ## Attaching package: 'questionr'
+
+    ## The following object is masked from 'package:psych':
+    ## 
+    ##     describe
 
 ``` r
 odds.ratio(Model_1) #This tells us the "Odds Ratios"
@@ -1158,6 +1303,81 @@ odds.ratio(Model_3a) #This tells us the "Odds Ratios"
     ## Race_HispOther              0.91718 0.78622 1.0674  0.267511    
     ## Health_Status               0.82029 0.74256 0.9062 9.628e-05 ***
     ## Education:Health_Status     1.02516 1.00039 1.0505  0.046279 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Logistic Regression (with Health Status levels)
+
+## Model \#2b: Demographic + Health Status (with Health Status levels)
+
+``` r
+Model_2b <- glm(Covid_Test ~ Education
+               + Age 
+               + Sex 
+               + Marital_Status
+               + Race_Hisp
+               + as.factor(Health_Status),
+               data = NHIS_data,
+               family = binomial)
+
+summary(Model_2b)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = Covid_Test ~ Education + Age + Sex + Marital_Status + 
+    ##     Race_Hisp + as.factor(Health_Status), family = binomial, 
+    ##     data = NHIS_data)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.3340  -0.8904  -0.8002   1.4045   1.8452  
+    ## 
+    ## Coefficients:
+    ##                              Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)                 -0.625889   0.176390  -3.548 0.000388 ***
+    ## Education                    0.114088   0.013798   8.268  < 2e-16 ***
+    ## Age                         -0.003955   0.001968  -2.009 0.044489 *  
+    ## SexMale                     -0.216553   0.042713  -5.070 3.98e-07 ***
+    ## Marital_StatusNot Married    0.106413   0.043598   2.441 0.014656 *  
+    ## Race_HispNon-Hispanic Black  0.369539   0.069005   5.355 8.55e-08 ***
+    ## Race_HispHispanic            0.295240   0.063836   4.625 3.75e-06 ***
+    ## Race_HispOther              -0.084629   0.077943  -1.086 0.277574    
+    ## as.factor(Health_Status)2   -0.253104   0.140377  -1.803 0.071383 .  
+    ## as.factor(Health_Status)3   -0.372703   0.130418  -2.858 0.004266 ** 
+    ## as.factor(Health_Status)4   -0.502404   0.130574  -3.848 0.000119 ***
+    ## as.factor(Health_Status)5   -0.532533   0.133360  -3.993 6.52e-05 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 13032  on 10440  degrees of freedom
+    ## Residual deviance: 12871  on 10429  degrees of freedom
+    ## AIC: 12895
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+``` r
+library(questionr)
+odds.ratio(Model_2b) #This tells us the "Odds Ratios"
+```
+
+    ## Waiting for profiling to be done...
+
+    ##                                  OR   2.5 % 97.5 %         p    
+    ## (Intercept)                 0.53479 0.37799 0.7549 0.0003877 ***
+    ## Education                   1.12085 1.09098 1.1516 < 2.2e-16 ***
+    ## Age                         0.99605 0.99222 0.9999 0.0444885 *  
+    ## SexMale                     0.80529 0.74057 0.8756 3.978e-07 ***
+    ## Marital_StatusNot Married   1.11228 1.02117 1.2115 0.0146562 *  
+    ## Race_HispNon-Hispanic Black 1.44707 1.26345 1.6560 8.545e-08 ***
+    ## Race_HispHispanic           1.34345 1.18497 1.5220 3.747e-06 ***
+    ## Race_HispOther              0.91885 0.78769 1.0693 0.2775740    
+    ## as.factor(Health_Status)2   0.77639 0.59031 1.0238 0.0713827 .  
+    ## as.factor(Health_Status)3   0.68887 0.53428 0.8913 0.0042664 ** 
+    ## as.factor(Health_Status)4   0.60507 0.46914 0.7831 0.0001193 ***
+    ## as.factor(Health_Status)5   0.58712 0.45270 0.7639 6.518e-05 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
